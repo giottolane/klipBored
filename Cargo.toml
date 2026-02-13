@@ -21,6 +21,6 @@ priority = "optional"
 
 assets = [
     ["target/release/klipBored", "usr/bin/", "755"],
-    ["klipbored.desktop", "etc/xdg/autostart/", "644"],
-    ["klipbored.desktop", "usr/share/applications/", "644"]
+    ["io.github.klipbored.app.desktop", "usr/share/applications/", "644"],
+    ["assets/klipbored.svg", "usr/share/icons/hicolor/scalable/apps/io.github.klipbored.app.svg", "644"]
 ]

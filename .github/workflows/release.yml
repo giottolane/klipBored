@@ -1,0 +1,36 @@
+name: Release klipBored
+
+on:
+  push:
+    tags:
+      - 'v*' # Se activa cuando subes una etiqueta como v0.1.0
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Instalar dependencias de GTK4
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev build-essential
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Compilar y crear paquete .deb
+        run: |
+          cargo build --release
+          cargo deb
+
+      - name: Crear Release en GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/debian/*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
