@@ -3,18 +3,53 @@ echo "Iniciando desinstalación segura de klipBored..."
 
 pkill -9 klipBored
 
-SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
-PATH_CUSTOM="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/"
-NAME=$(gsettings get "$SCHEMA:$PATH_CUSTOM" name)
+SCHEMA_MAIN="org.gnome.settings-daemon.plugins.media-keys"
+SCHEMA_CUSTOM="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 
-if [[ $NAME == *"'klipBored'"* ]]; then
-    echo "   -> Detectado atajo de klipBored en custom0. Eliminando..."
-    gsettings set "$SCHEMA:$PATH_CUSTOM" binding ""
-    gsettings set "$SCHEMA:$PATH_CUSTOM" command ""
-    gsettings set "$SCHEMA:$PATH_CUSTOM" name ""
+# Get the list of custom keybindings
+LIST=$(gsettings get "$SCHEMA_MAIN" "custom-keybindings")
+
+# Loop through the list to find the one named 'klipBored'
+NEW_LIST="["
+FIRST=true
+FOUND_PATH=""
+
+# Clean the list string and split by comma
+CLEAN_LIST=${LIST#[}
+CLEAN_LIST=${CLEAN_LIST%]}
+IFS=',' read -ra ADDR <<< "$CLEAN_LIST"
+
+for i in "${ADDR[@]}"; do
+    PATH_RAW=$(echo "$i" | xargs) # trim whitespace
+    PATH_CLEAN=${PATH_RAW#\'}
+    PATH_CLEAN=${PATH_CLEAN%\'}
     
+    if [ -n "$PATH_CLEAN" ]; then
+        NAME=$(gsettings get "$SCHEMA_CUSTOM:$PATH_CLEAN" name 2>/dev/null)
+        if [[ $NAME == *"'klipBored'"* ]]; then
+            echo "   -> Detectado atajo de klipBored en $PATH_CLEAN. Marcando para eliminar..."
+            FOUND_PATH="$PATH_CLEAN"
+        else
+            if [ "$FIRST" = true ]; then
+                NEW_LIST+="'$PATH_CLEAN'"
+                FIRST=false
+            else
+                NEW_LIST+=", '$PATH_CLEAN'"
+            fi
+        fi
+    fi
+done
+NEW_LIST+="]"
+
+if [ -n "$FOUND_PATH" ]; then
+    echo "   -> Actualizando lista de atajos y limpiando configuración..."
+    gsettings set "$SCHEMA_MAIN" "custom-keybindings" "$NEW_LIST"
+    # Also clear the specific entry
+    gsettings set "$SCHEMA_CUSTOM:$FOUND_PATH" name ""
+    gsettings set "$SCHEMA_CUSTOM:$FOUND_PATH" command ""
+    gsettings set "$SCHEMA_CUSTOM:$FOUND_PATH" binding ""
 else
-    echo "   -> No se detectó configuración estándar de klipBored o ya fue modificada. No tocamos tus atajos."
+    echo "   -> No se detectó configuración de klipBored en tus atajos. No tocamos nada."
 fi
 
 rm -rf ~/.config/klipBored

@@ -1,11 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=KlipBored
+Name=klipBored
 Comment=Historial de portapapeles
 Exec=/home/pau/.local/bin/klipBored
-Icon=klipbored
+Icon=io.github.klipbored.app
 Terminal=false
 Categories=Utility;GTK;
 X-GNOME-Autostart-enabled=true
-StartupNotify=false
-NoDisplay=true
+StartupNotify=true
+StartupWMClass=io.github.klipbored.app
