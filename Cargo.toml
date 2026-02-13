@@ -18,7 +18,7 @@ Un gestor de portapapeles simple y rápido escrito en Rust.
 depends = "$auto"
 section = "utils"
 priority = "optional"
-postinst = "debian/postinst"
+maintainer-scripts = "debian"
 
 assets = [
     ["target/release/klipBored", "usr/bin/", "755"],
