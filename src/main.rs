@@ -69,12 +69,23 @@ fn is_autostart_enabled() -> bool {
 fn set_autostart(enabled: bool) {
     let path = autostart_file();
     if enabled {
-        let app_desktop = glib::user_data_dir()
+        let user_app = glib::user_data_dir()
             .join("applications")
             .join("io.github.klipbored.app.desktop");
-        if app_desktop.exists() {
+        let system_app =
+            std::path::Path::new("/usr/share/applications/io.github.klipbored.app.desktop");
+
+        let src = if user_app.exists() {
+            Some(user_app)
+        } else if system_app.exists() {
+            Some(system_app.to_path_buf())
+        } else {
+            None
+        };
+
+        if let Some(src_path) = src {
             let _ = fs::create_dir_all(path.parent().unwrap());
-            let _ = fs::copy(app_desktop, path);
+            let _ = fs::copy(src_path, path);
         }
     } else {
         let _ = fs::remove_file(path);
@@ -238,6 +249,8 @@ struct KlipBoredModel {
     current_page: String, // "wizard", "wizard_custom", "clipboard", "settings"
     autostart_enabled: bool,
     current_binding: String,
+    manual_binding: String,
+    binding_status: String, // "ok", "error", "checking"
 }
 
 #[derive(Debug)]
@@ -251,6 +264,8 @@ enum KlipBoredMsg {
     OpenSettings,
     ToggleAutostart(bool),
     BackToClipboard,
+    UpdateManualBinding(String),
+    ApplyManualBinding,
 }
 
 #[relm4::component]
@@ -410,6 +425,20 @@ impl SimpleComponent for KlipBoredModel {
                                     set_orientation: gtk::Orientation::Horizontal,
                                     set_spacing: 12,
                                     set_halign: gtk::Align::Center,
+                                    gtk::Label { set_label: "Win + V", add_css_class: "shortcut-key" },
+                                },
+                                connect_clicked[sender] => move |_| {
+                                    sender.input(KlipBoredMsg::WizardApplyBinding("<Super>v".to_string()));
+                                },
+                            },
+
+                            gtk::Button {
+                                add_css_class: "wizard-shortcut-option",
+                                set_width_request: 240,
+                                gtk::Box {
+                                    set_orientation: gtk::Orientation::Horizontal,
+                                    set_spacing: 12,
+                                    set_halign: gtk::Align::Center,
                                     gtk::Label { set_label: "Ctrl + Shift + V", add_css_class: "shortcut-key" },
                                 },
                                 connect_clicked[sender] => move |_| {
@@ -417,37 +446,50 @@ impl SimpleComponent for KlipBoredModel {
                                 },
                             },
 
-
-                            gtk::Button {
-                                add_css_class: "wizard-shortcut-option",
-                                set_width_request: 240,
-                                gtk::Box {
-                                    set_orientation: gtk::Orientation::Horizontal,
-                                    set_spacing: 12,
-                                    set_halign: gtk::Align::Center,
-                                    gtk::Label { set_label: "Super + C", add_css_class: "shortcut-key" },
-                                },
-                                connect_clicked[sender] => move |_| {
-                                    sender.input(KlipBoredMsg::WizardApplyBinding("<Super>c".to_string()));
-                                },
+                            gtk::Separator {
+                                set_margin_top: 8,
+                                set_margin_bottom: 8,
                             },
 
-                            gtk::Button {
-                                add_css_class: "wizard-shortcut-option",
-                                set_width_request: 240,
-                                gtk::Box {
-                                    set_orientation: gtk::Orientation::Horizontal,
-                                    set_spacing: 12,
-                                    set_halign: gtk::Align::Center,
-                                    gtk::Label { set_label: "Ctrl + Super + V", add_css_class: "shortcut-key" },
-                                },
-                                connect_clicked[sender] => move |_| {
-                                    sender.input(KlipBoredMsg::WizardApplyBinding("<Control><Super>v".to_string()));
-                                },
+                            gtk::Label {
+                                set_label: "O introduce uno manualmente:",
+                                add_css_class: "wizard-description",
                             },
 
+                            gtk::Box {
+                                set_orientation: gtk::Orientation::Horizontal,
+                                set_spacing: 8,
+                                add_css_class: "manual-entry-box",
+
+                                gtk::Entry {
+                                    set_placeholder_text: Some("<Super>x, <Control>v..."),
+                                    set_hexpand: true,
+                                    #[watch]
+                                    set_text: &model.manual_binding,
+                                    connect_changed[sender] => move |e| {
+                                        sender.input(KlipBoredMsg::UpdateManualBinding(e.text().to_string()));
+                                    },
+                                },
+
+                                gtk::Button {
+                                    set_label: "Guardar",
+                                    add_css_class: "wizard-btn-primary",
+                                    #[watch]
+                                    set_sensitive: !model.manual_binding.is_empty() && model.binding_status != "error",
+                                    connect_clicked[sender] => move |_| {
+                                        sender.input(KlipBoredMsg::ApplyManualBinding);
+                                    }
+                                }
+                            },
+
+                            gtk::Label {
+                                #[watch]
+                                set_label: if model.binding_status == "error" { "Atajo inválido o incompleto" } else { "" },
+                                add_css_class: "error-label",
+                                #[watch]
+                                set_visible: model.binding_status == "error",
+                            }
                         },
-
                     },
 
                     // --- Página del Clipboard ---
@@ -600,6 +642,8 @@ impl SimpleComponent for KlipBoredModel {
             current_page,
             autostart_enabled: is_autostart_enabled(),
             current_binding: get_keybinding(),
+            manual_binding: String::new(),
+            binding_status: "ok".to_string(),
         };
 
         let list_box = model.clipboard_entries.widget();
@@ -639,7 +683,7 @@ impl SimpleComponent for KlipBoredModel {
         ComponentParts { model, widgets }
     }
 
-    fn update(&mut self, msg: Self::Input, _sender: ComponentSender<Self>) {
+    fn update(&mut self, msg: Self::Input, sender: ComponentSender<Self>) {
         match msg {
             KlipBoredMsg::WizardAccept => {
                 save_keybinding("<Super>v");
@@ -694,6 +738,23 @@ impl SimpleComponent for KlipBoredModel {
                 } else {
                     self.current_page = "clipboard".to_string();
                 }
+            }
+
+            KlipBoredMsg::UpdateManualBinding(text) => {
+                self.manual_binding = text.clone();
+                // Validación básica de formato de atajo de GTK
+                if text.is_empty() {
+                    self.binding_status = "ok".to_string();
+                } else if text.contains('<') && text.contains('>') && text.len() > 3 {
+                    self.binding_status = "ok".to_string();
+                } else {
+                    self.binding_status = "error".to_string();
+                }
+            }
+
+            KlipBoredMsg::ApplyManualBinding => {
+                let binding = self.manual_binding.clone();
+                sender.input(KlipBoredMsg::WizardApplyBinding(binding));
             }
 
             KlipBoredMsg::NewItem(content) => {
@@ -849,6 +910,30 @@ fn setup_gsettings_binding(path_str: &str, binding: &str) {
             binding,
         ])
         .status();
+
+    // Especial para Ubuntu: Win+V abre el calendario por defecto.
+    // Si el usuario elige Win+V, debemos deshabilitar la acción del shell.
+    // Si elige otra cosa, nos aseguramos de que la del shell esté habilitada (si era Win+V)
+    if binding == "<Super>v" {
+        let _ = Command::new("gsettings")
+            .args(&[
+                "set",
+                "org.gnome.shell.keybindings",
+                "message-list-toggle",
+                "[]",
+            ])
+            .status();
+    } else {
+        // Restaurar si cambiamos a otro atajo
+        let _ = Command::new("gsettings")
+            .args(&[
+                "set",
+                "org.gnome.shell.keybindings",
+                "message-list-toggle",
+                "['<Super>v']",
+            ])
+            .status();
+    }
 }
 
 fn main() {

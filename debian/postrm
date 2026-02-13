@@ -1,0 +1,33 @@
+#!/bin/sh
+set -e
+
+# Esto se ejecuta después de remover el paquete
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    echo "Limpiando configuraciones de usuario de klipBored..."
+    
+    # Buscamos en todos los directorios home
+    for user_home in /home/*; do
+        [ -d "$user_home" ] || continue
+        
+        # Eliminar carpeta de configuración
+        if [ -d "$user_home/.config/klipBored" ]; then
+            echo "   -> Borrando $user_home/.config/klipBored"
+            rm -rf "$user_home/.config/klipBored"
+        fi
+        
+        # Eliminar autostart
+        if [ -f "$user_home/.config/autostart/io.github.klipbored.app.desktop" ]; then
+            echo "   -> Borrando autostart en $user_home"
+            rm -f "$user_home/.config/autostart/io.github.klipbored.app.desktop"
+        fi
+
+        # Intentar restaurar el atajo de GNOME si es posible
+        # Nota: gsettings requiere sesión de DBus, por lo que hacerlo desde root para cada usuario es complejo.
+        # Al menos borramos los archivos físicos para que la próxima instalación sea "de 0".
+    done
+    
+    # Forzar actualización de base de datos de escritorio
+    update-desktop-database -q /usr/share/applications || true
+fi
+
+exit 0

@@ -48,6 +48,10 @@ if [ -n "$FOUND_PATH" ]; then
     gsettings set "$SCHEMA_CUSTOM:$FOUND_PATH" name ""
     gsettings set "$SCHEMA_CUSTOM:$FOUND_PATH" command ""
     gsettings set "$SCHEMA_CUSTOM:$FOUND_PATH" binding ""
+    
+    # Restaurar atajo por defecto de Ubuntu (Win+V para calendario)
+    echo "   -> Restaurando atajo por defecto de Ubuntu (Win+V)..."
+    gsettings set org.gnome.shell.keybindings message-list-toggle "['<Super>v']"
 else
     echo "   -> No se detectó configuración de klipBored en tus atajos. No tocamos nada."
 fi

@@ -1,7 +1,9 @@
 [package]
 name = "klipBored"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+description = "Un gestor de portapapeles simple y rápido escrito en Rust."
+license = "MIT"
 
 [dependencies]
 relm4 = "0.10.1"
