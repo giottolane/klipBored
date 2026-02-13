@@ -52,11 +52,27 @@ else
     echo "   -> No se detectó configuración de klipBored en tus atajos. No tocamos nada."
 fi
 
+# Limpieza de iconos de usuario (si existen)
+rm -f ~/.local/share/icons/hicolor/scalable/apps/io.github.klipbored.app.svg
+rm -f ~/.local/share/icons/hicolor/scalable/apps/klipbored.svg
+rm -f ~/.local/share/icons/hicolor/128x128/apps/io.github.klipbored.app.png
+rm -f ~/.local/share/icons/hicolor/48x48/apps/io.github.klipbored.app.png
+
+# Limpieza de archivos de escritorio del usuario
+rm -f ~/.local/share/applications/io.github.klipbored.app.desktop
+rm -f ~/.config/autostart/io.github.klipbored.app.desktop
+
+# Borrado de historial y configuración personal
 rm -rf ~/.config/klipBored
-rm -f ~/.config/autostart/klipbored.desktop
+
+# Actualización de base de datos de iconos para refrescar el dock
+if command -v gtk4-update-icon-cache &> /dev/null; then
+    touch ~/.local/share/icons/hicolor
+    gtk4-update-icon-cache -f -t ~/.local/share/icons/hicolor &> /dev/null
+fi
 
 if dpkg -l | grep -q klipbored; then
     sudo apt remove -y klipbored
 fi
 
-echo "Listo."
+echo "✅ Desinstalación completa. Rastro eliminado al 100%."
