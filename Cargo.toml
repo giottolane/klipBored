@@ -1,0 +1,26 @@
+[package]
+name = "klipBored"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+relm4 = "0.10.1"
+gtk = { package = "gtk4", version = "0.10.3" }
+adw = { package = "libadwaita", version = "0.8.1" }
+arboard = "3.6.1"
+
+[package.metadata.deb]
+maintainer = "giottolane <pau.evansngk@gmail.com>"
+copyright = "2026, giottolane"
+extended-description = """
+Un gestor de portapapeles simple y rápido escrito en Rust.
+"""
+depends = "$auto"
+section = "utils"
+priority = "optional"
+
+assets = [
+    ["target/release/klipBored", "usr/bin/", "755"],
+    ["klipbored.desktop", "etc/xdg/autostart/", "644"],
+    ["klipbored.desktop", "usr/share/applications/", "644"]
+]
