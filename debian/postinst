@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ "$1" = "configure" ]; then
+    # Refrescar bases de datos de escritorio e iconos
+    update-desktop-database -q /usr/share/applications || true
+    if [ -d /usr/share/icons/hicolor ]; then
+        touch /usr/share/icons/hicolor || true
+        gtk-update-icon-cache -q -t /usr/share/icons/hicolor || true
+    fi
+fi
+exit 0
