@@ -4,16 +4,15 @@
 
 ![Icono de klipBored](assets/klipbored.svg)
 
-## ✨ Características
+## Características
 
 - 🕒 **Historial Inteligente**: Guarda tus últimos clips (texto e imágenes).
 - 🖼️ **Soporte de Imágenes**: Previsualiza y recupera imágenes directamente desde el historial.
 - ⚡ **Acceso Instantáneo**: Configura un atajo de teclado (ej. `Super + V`) para abrir y cerrar el panel.
 - ⚙️ **Ajustes Integrados**: Cambia el atajo o activa el auto-inicio directamente desde la app.
-- 🌑 **Diseño Premium**: Interfaz oscura moderna basada en Libadwaita y GTK4.
 - 🖱️ **Auto-ocultado**: El panel se oculta automáticamente al perder el foco para no interrumpir tu flujo de trabajo.
 
-## 🚀 Instalación rápida
+## Instalación rápida
 
 Si ya tienes instalado **Rust** y las librerías de desarrollo de **GTK4 / Libadwaita**, simplemente ejecuta:
 
@@ -51,4 +50,4 @@ chmod +x uninstall.sh
 ```
 
 ---
-*Desarrollado con ❤️ usando Rust, Relm4 y GTK4.*
+*Salu2*
